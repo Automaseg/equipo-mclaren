@@ -86,6 +86,33 @@
   .sync-err  { background: #2a0f0f; color: #fca5a5; }
   .sync-wait { background: #2a220f; color: #fde68a; }
 
+  /* Imágenes para WhatsApp (se generan fuera de pantalla) */
+  .btn-img { background: var(--ok); color: #03200d; border-color: var(--ok); }
+  .ex-hoja { position: fixed; left: -10000px; top: 0; width: 540px; background: var(--hoja); color: var(--texto); font-family: 'Titillium Web', system-ui, sans-serif; padding: 16px 12px 12px; border-top: 6px solid var(--papaya); }
+  .ex-top { display: flex; justify-content: space-between; align-items: flex-end; }
+  .ex-hoja h1 { font-size: 30px; font-weight: 900; line-height: 1; }
+  .ex-semana { font-size: 15px; color: var(--tenue); margin-top: 4px; }
+  .ex-parte { font-size: 14px; font-weight: 700; color: var(--papaya); }
+  .ex-leyenda { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 12px 0 10px; font-size: 15px; }
+  .ex-ley { display: flex; align-items: center; gap: 5px; }
+  .ex-sq { width: 22px; height: 22px; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; }
+  .ex-dias, .ex-celdas { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+  .ex-dias { padding: 0 8px; margin-bottom: 6px; }
+  .ex-dia { text-align: center; font-size: 14px; font-weight: 700; color: var(--tenue); border-radius: 6px; padding: 2px 0; line-height: 1.15; }
+  .ex-dia.hl { background: var(--papaya); color: #1a0d00; }
+  .ex-serv { background: var(--fila); border-radius: 10px; padding: 7px 8px 8px; margin-bottom: 6px; }
+  .ex-serv-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+  .ex-nombre { font-size: 18px; font-weight: 700; }
+  .ex-racha { font-size: 18px; font-weight: 900; color: var(--papaya); }
+  .ex-celda { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 4px 0; border-radius: 6px; }
+  .ex-celda.hl { background: #241d1a; }
+  .ex-cuadro { width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+  .ex-cuadro.st-1, .ex-sq.st-1 { box-shadow: none; border: 3px solid var(--oro); }
+  .ex-cuadro.st-p { background: var(--vacia); }
+  .ex-junta { font-size: 13px; font-weight: 600; padding: 2px 5px; border-radius: 10px; white-space: nowrap; }
+  .ex-junta.si { background: var(--ok); color: #03200d; }
+  .ex-junta.no { background: #b91c1c; color: #fff; }
+
 </style>
 </head>
 <body>
@@ -117,11 +144,13 @@
   <button class="btn" id="btn-prev" aria-label="Semana anterior">◀ Semana</button>
   <button class="btn" id="btn-next" aria-label="Semana siguiente">Semana ▶</button>
   <button class="btn btn-hoy" id="btn-hoy">+ Agregar hoy</button>
+  <button class="btn btn-img" id="btn-img">📷 Imágenes para WhatsApp</button>
   <button class="btn btn-reset" id="btn-reset">↺ Reiniciar semana</button>
 </div>
 <div class="controles">
   <span id="sync-status" class="sync-status sync-wait">⏳ Conectando…</span>
 </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -382,7 +411,97 @@ async function agregarHoy() {
 
 document.getElementById('btn-prev').onclick   = () => changeWeek(-1);
 document.getElementById('btn-next').onclick   = () => changeWeek(1);
+
+/* ---------- Imágenes para WhatsApp ---------- */
+const POR_IMAGEN = 7;
+
+function construirHoja(clientes, ultimo, parte, totalPartes) {
+  const key = getWeekKey(weekOffset);
+  const days = getDaysOfWeek(weekOffset);
+  const cab = DIAS.map((d, i) => i <= ultimo
+    ? `<div class="ex-dia${i === ultimo ? ' hl' : ''}">${d}<br>${ddmm(days[i])}</div>`
+    : '<div></div>').join('');
+
+  const filas = clientes.map(c => {
+    const arr = data[key][c];
+    const r = racha(arr, ultimo);
+    const celdas = arr.map((cell, i) => {
+      if (i > ultimo) return '<div></div>';
+      const cuadro = `<div class="ex-cuadro ${cell.turno === -1 ? 'st-p' : 'st-' + cell.turno}">${cell.turno === -1 ? '' : ESTADOS[cell.turno].e}</div>`;
+      const junta = cell.turno === -1 ? '' : `<span class="ex-junta ${cell.junta ? 'si' : 'no'}">${cell.junta ? 'Junta' : 'Sin junta'}</span>`;
+      return `<div class="ex-celda${i === ultimo ? ' hl' : ''}">${cuadro}${junta}</div>`;
+    }).join('');
+    return `<div class="ex-serv"><div class="ex-serv-top"><span class="ex-nombre">${c}</span><span class="ex-racha">${r ? '🔥 ' + r : ''}</span></div><div class="ex-celdas">${celdas}</div></div>`;
+  }).join('');
+
+  const hoja = document.createElement('div');
+  hoja.className = 'ex-hoja';
+  hoja.innerHTML = `
+    <div class="ex-top">
+      <div><h1>Equipo McLaren</h1><div class="ex-semana">${document.getElementById('week-label').textContent}</div></div>
+      <div class="ex-parte">${parte} de ${totalPartes}</div>
+    </div>
+    <div class="ex-leyenda">
+      <span class="ex-ley"><span class="ex-sq st-0">🥇</span>Dorado</span>
+      <span class="ex-ley"><span class="ex-sq st-1">⏰</span>Retraso</span>
+      <span class="ex-ley"><span class="ex-sq st-2">❓</span>Sin confirmar</span>
+      <span class="ex-ley"><span class="ex-sq st-3">✕</span>Falta</span>
+      <span class="ex-ley">🔥 Días dorados seguidos</span>
+    </div>
+    <div class="ex-dias">${cab}</div>
+    ${filas}`;
+  return hoja;
+}
+
+async function generarImagenes() {
+  const ultimo = ultimoDiaVisible();
+  if (ultimo < 0) { alert('No hay días capturados en esta semana para generar la imagen.'); return; }
+  if (typeof html2canvas === 'undefined') { alert('No se pudo cargar el generador de imágenes. Revisa tu conexión y recarga la página.'); return; }
+
+  const btn = document.getElementById('btn-img');
+  btn.disabled = true;
+  btn.textContent = '⏳ Generando…';
+  const fecha = fechaKey(getDaysOfWeek(weekOffset)[ultimo]);
+  const partes = [];
+  for (let i = 0; i < CLIENTES.length; i += POR_IMAGEN) partes.push(CLIENTES.slice(i, i + POR_IMAGEN));
+
+  try {
+    await document.fonts.ready;
+    const archivos = [];
+    for (let p = 0; p < partes.length; p++) {
+      const hoja = construirHoja(partes[p], ultimo, p + 1, partes.length);
+      document.body.appendChild(hoja);
+      const canvas = await html2canvas(hoja, { scale: 2, backgroundColor: '#0c1220', logging: false });
+      hoja.remove();
+      const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+      archivos.push(new File([blob], `mclaren_${fecha}_${p + 1}.png`, { type: 'image/png' }));
+    }
+
+    const esMovil = /Android|iPhone|iPad/i.test(navigator.userAgent);
+    if (esMovil && navigator.canShare && navigator.canShare({ files: archivos })) {
+      await navigator.share({ files: archivos });
+    } else {
+      archivos.forEach(f => {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(f);
+        a.download = f.name;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+      });
+    }
+  } catch (e) {
+    if (e.name !== 'AbortError') { console.warn(e); alert('No se pudo generar la imagen.'); }
+  } finally {
+    document.querySelectorAll('.ex-hoja').forEach(h => h.remove());
+    btn.disabled = false;
+    btn.textContent = '📷 Imágenes para WhatsApp';
+  }
+}
+
 document.getElementById('btn-hoy').onclick    = agregarHoy;
+document.getElementById('btn-img').onclick    = generarImagenes;
 document.getElementById('btn-reset').onclick  = resetSemana;
 
 // Arranque: si es lunes y aún no hay captura de hoy, abre la semana anterior (para ver el domingo)
