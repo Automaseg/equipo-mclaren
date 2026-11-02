@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Equipo McLaren — Desafío IntSeg 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #070b14;
+    --hoja: #0c1220;
+    --fila: #121a2b;
+    --vacia: #1b2438;
+    --linea: #1f2a40;
+    --texto: #eef2f8;
+    --tenue: #8b96ab;
+    --papaya: #ff8000;
+    --oro: #facc15;
+    --retraso: #0b6b2e;
+    --sinconf: #60a5fa;
+    --falta: #ef4444;
+    --ok: #22c55e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--texto); font-family: 'Titillium Web', system-ui, sans-serif; min-height: 100vh; padding: 12px 8px 30px; }
+
+  /* Zona que se captura para WhatsApp */
+  #captura { max-width: 900px; margin: 0 auto; background: var(--hoja); border: 1px solid var(--linea); border-radius: 14px; padding: 14px 12px 12px; position: relative; overflow: hidden; }
+  #captura::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--papaya); }
+  #captura::after { content: ""; position: absolute; top: 0; right: 0; width: 140px; height: 54px; background: repeating-linear-gradient(115deg, transparent 0 10px, rgba(255,128,0,0.55) 10px 14px); -webkit-mask-image: linear-gradient(90deg, transparent, #000); mask-image: linear-gradient(90deg, transparent, #000); pointer-events: none; }
+
+  header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 16px; margin-bottom: 10px; padding-right: 110px; }
+  header h1 { font-size: 1.5rem; font-weight: 900; line-height: 1; }
+  header .semana { font-size: 0.8rem; color: var(--tenue); margin-top: 2px; }
+
+  .leyenda { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 0.74rem; color: var(--tenue); align-items: center; }
+  .ley { display: flex; align-items: center; gap: 4px; }
+  .sq { width: 18px; height: 18px; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.65rem; }
+
+  .tabla-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: separate; border-spacing: 0 4px; }
+  th { font-size: 0.72rem; color: var(--tenue); font-weight: 700; padding: 3px 2px; text-align: center; }
+  th .f { display: block; font-weight: 400; font-size: 0.66rem; }
+  th.col-serv { text-align: left; padding-left: 10px; }
+  th.hl { background: var(--papaya); color: #1a0d00; border-radius: 7px 7px 0 0; }
+  th.hl .f { font-weight: 700; }
+
+  tbody td { background: var(--fila); padding: 4px 2px; text-align: center; vertical-align: middle; }
+  tbody td:first-child { border-radius: 8px 0 0 8px; text-align: left; padding-left: 10px; }
+  tbody td:last-child { border-radius: 0 8px 8px 0; }
+  tbody td.hl { background: #241d1a; box-shadow: inset 2px 0 0 var(--papaya), inset -2px 0 0 var(--papaya); }
+
+  .serv-nombre { font-size: 0.8rem; font-weight: 700; line-height: 1.1; white-space: nowrap; }
+
+  .dia { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .celda { width: 30px; height: 30px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 1rem; }
+  .st-0 { background: var(--oro); }
+  .st-1 { background: var(--retraso); box-shadow: inset 0 0 0 1px var(--oro); }
+  .st-2 { background: var(--sinconf); }
+  .st-3 { background: var(--falta); color: #fff; font-weight: 900; }
+  .celda.st-p { background: var(--vacia); }
+
+  .junta { display: inline-block; font-size: 0.68rem; font-weight: 600; letter-spacing: 0.02em; padding: 2px 8px; border-radius: 10px; white-space: nowrap; border: none; font-family: inherit; cursor: pointer; }
+  .junta.si { background: var(--ok); color: #03200d; }
+  .junta.no { background: #b91c1c; color: #fff; }
+  .celda { cursor: pointer; border: none; font-family: inherit; }
+  .celda:hover, .junta:hover { filter: brightness(1.12); }
+  .celda:focus-visible, .junta:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+  td.racha { font-size: 0.85rem; font-weight: 900; color: var(--papaya); white-space: nowrap; padding: 0 10px 0 4px; }
+  td.racha.cero { color: #3a4762; }
+
+
+  .vacio { padding: 22px 10px; text-align: center; color: var(--tenue); font-size: 0.85rem; }
+
+  /* Controles (fuera de la captura) */
+  .controles { max-width: 900px; margin: 10px auto 0; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; align-items: center; }
+  .btn { font-family: inherit; font-size: 0.82rem; font-weight: 700; padding: 7px 14px; border-radius: 8px; border: 1px solid var(--linea); background: var(--fila); color: var(--texto); cursor: pointer; }
+  .btn:hover { border-color: var(--papaya); }
+  .btn:disabled { opacity: 0.3; cursor: default; border-color: var(--linea); }
+  .btn:focus-visible { outline: 2px solid var(--papaya); outline-offset: 2px; }
+  .btn-hoy { background: var(--papaya); color: #1a0d00; border-color: var(--papaya); }
+  .btn-reset { color: var(--falta); }
+  .sync-status { font-size: 0.72rem; padding: 3px 10px; border-radius: 20px; }
+  .sync-ok   { background: #0f2a1a; color: #86efac; }
+  .sync-err  { background: #2a0f0f; color: #fca5a5; }
+  .sync-wait { background: #2a220f; color: #fde68a; }
+
+</style>
+</head>
+<body>
+
+<div id="captura">
+  <header>
+    <div>
+      <h1>Equipo McLaren</h1>
+      <div class="semana" id="week-label"></div>
+    </div>
+    <div class="leyenda">
+      <span class="ley"><span class="sq st-0">🥇</span>Dorado</span>
+      <span class="ley"><span class="sq st-1">⏰</span>Retraso</span>
+      <span class="ley"><span class="sq st-2">❓</span>Sin confirmar</span>
+      <span class="ley"><span class="sq st-3">✕</span>Falta</span>
+      <span class="ley">🔥 Días dorados seguidos</span>
+    </div>
+  </header>
+
+  <div class="tabla-wrap">
+    <table>
+      <thead><tr id="header-row"></tr></thead>
+      <tbody id="tracker-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="controles">
+  <button class="btn" id="btn-prev" aria-label="Semana anterior">◀ Semana</button>
+  <button class="btn" id="btn-next" aria-label="Semana siguiente">Semana ▶</button>
+  <button class="btn btn-hoy" id="btn-hoy">+ Agregar hoy</button>
+  <button class="btn btn-reset" id="btn-reset">↺ Reiniciar semana</button>
+</div>
+<div class="controles">
+  <span id="sync-status" class="sync-status sync-wait">⏳ Conectando…</span>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAGSpNLto2RahUg6yb-ROV1SnXZLUg6c_Y",
+  authDomain: "guerrerosagua.firebaseapp.com",
+  projectId: "guerrerosagua",
+  storageBucket: "guerrerosagua.firebasestorage.app",
+  messagingSenderId: "552276093659",
+  appId: "1:552276093659:web:d49cb82785ace721ff7afe"
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+
+const COLECCION = 'mclaren_semanas';
+const LS_KEY    = 'mclaren_retos_v1';
+
+const CLIENTES = ['CENTERPIECE','HARMAN','COI','TAKION','VIANT MEDICAL','DSV SOLUTION NOGALES','IVEX','TECMA PIC 16','ALLIANCE','PROL ALAMAR 1','PROLOGIS NOGALES','BELDEN','HITECH','TECMA TBSI MURUA'];
+const DIAS     = ['LUN','MAR','MIÉ','JUE','VIE','SÁB','DOM'];
+const MESES    = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const ESTADOS  = [
+  { e:'🥇', n:'Dorado' },
+  { e:'⏰', n:'Retraso' },
+  { e:'❓', n:'Sin confirmar' },
+  { e:'✕', n:'Falta' }
+];
+// Gravedad por índice de estado (mayor = peor): Dorado < Retraso < Sin confirmar < Falta
+const GRAVEDAD = [0, 1, 2, 3];
+
+let weekOffset = 0;
+let data = {};
+let mostrarHoy = false;
+
+const pad = n => String(n).padStart(2, '0');
+const fechaKey = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const ddmm = d => `${pad(d.getDate())}/${pad(d.getMonth()+1)}`;
+
+function setSyncStatus(state) {
+  const el = document.getElementById('sync-status');
+  if (state === 'ok')   { el.className = 'sync-status sync-ok';   el.textContent = '✅ Sincronizado'; }
+  if (state === 'err')  { el.className = 'sync-status sync-err';  el.textContent = '⚠️ Sin conexión: los cambios solo quedan en este equipo'; }
+  if (state === 'wait') { el.className = 'sync-status sync-wait'; el.textContent = '⏳ Guardando…'; }
+}
+
+function getMonday(offset) {
+  const now = new Date();
+  const day = now.getDay();
+  const diff = (day === 0 ? -6 : 1 - day);
+  const mon = new Date(now);
+  mon.setDate(now.getDate() + diff + offset * 7);
+  mon.setHours(0,0,0,0);
+  return mon;
+}
+function getWeekKey(offset) { return fechaKey(getMonday(offset)); }
+function getDaysOfWeek(offset) {
+  const mon = getMonday(offset);
+  return Array.from({length:7}, (_,i) => { const d = new Date(mon); d.setDate(mon.getDate() + i); return d; });
+}
+function getTodayDayIndex() { const d = new Date().getDay(); return d === 0 ? 6 : d - 1; }
+
+const celdaVacia = () => ({ turno: -1, junta: false, nota: '' });
+
+function ensureWeek(key) {
+  if (!data[key]) data[key] = {};
+  CLIENTES.forEach(c => {
+    const arr = Array.isArray(data[key][c]) ? data[key][c] : [];
+    data[key][c] = Array.from({length:7}, (_,i) => {
+      const x = arr[i] || {};
+      return { turno: typeof x.turno === 'number' ? x.turno : -1, junta: !!x.junta, nota: x.nota || '' };
+    });
+  });
+}
+
+function guardarLocal() {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(data)); } catch (_) {}
+}
+
+async function saveData() {
+  const key = getWeekKey(weekOffset);
+  guardarLocal();
+  setSyncStatus('wait');
+  try {
+    await setDoc(doc(db, COLECCION, key), { semana: key, clientes: data[key], actualizado: new Date().toISOString() });
+    setSyncStatus('ok');
+  } catch (e) {
+    console.warn('Firebase error:', e);
+    setSyncStatus('err');
+  }
+}
+
+async function loadData() {
+  const key = getWeekKey(weekOffset);
+  try {
+    const snap = await getDoc(doc(db, COLECCION, key));
+    if (snap.exists()) data[key] = snap.data().clientes || {};
+    ensureWeek(key);
+    guardarLocal();
+    setSyncStatus('ok');
+  } catch (e) {
+    console.warn('Firebase error:', e);
+    setSyncStatus('err');
+    try {
+      const local = JSON.parse(localStorage.getItem(LS_KEY) || '{}');
+      if (local[key]) data[key] = local[key];
+    } catch (_) {}
+    ensureWeek(key);
+  }
+}
+
+// Último día que se muestra: semanas pasadas = domingo; semana actual = hoy si ya hay captura (o en edición), si no, ayer
+function ultimoDiaVisible() {
+  if (weekOffset < 0) return 6;
+  const t = getTodayDayIndex();
+  if (mostrarHoy) return t;
+  const key = getWeekKey(0);
+  const hoyCapturado = CLIENTES.some(c => data[key][c][t].turno !== -1);
+  return hoyCapturado ? t : t - 1;
+}
+
+function peorEstado(arr, ultimo) {
+  let peor = -1;
+  for (let i = 0; i <= ultimo; i++) {
+    const t = arr[i].turno;
+    if (t !== -1 && (peor === -1 || GRAVEDAD[t] > GRAVEDAD[peor])) peor = t;
+  }
+  return peor;
+}
+
+function racha(arr, ultimo) {
+  let n = 0;
+  for (let i = ultimo; i >= 0; i--) { if (arr[i].turno === 0) n++; else break; }
+  return n;
+}
+
+async function changeWeek(dir) {
+  if (weekOffset + dir > 0) return;
+  weekOffset += dir;
+  await loadData();
+  render();
+}
+
+async function resetSemana() {
+  if (!confirm('¿Borrar todos los datos capturados de esta semana?')) return;
+  const key = getWeekKey(weekOffset);
+  delete data[key];
+  ensureWeek(key);
+  await saveData();
+  render();
+}
+
+function renderHeader(ultimo) {
+  const row = document.getElementById('header-row');
+  const days = getDaysOfWeek(weekOffset);
+  row.innerHTML = '<th class="col-serv">Servicio</th>';
+  for (let i = 0; i <= ultimo; i++) {
+    const th = document.createElement('th');
+    if (i === ultimo) th.classList.add('hl');
+    th.innerHTML = `${DIAS[i]}<span class="f">${ddmm(days[i])}</span>`;
+    row.appendChild(th);
+  }
+  if (ultimo >= 0) row.insertAdjacentHTML('beforeend', '<th>Racha</th>');
+
+  const d0 = days[0], d6 = days[6];
+  const mesIni = d0.getMonth() !== d6.getMonth() ? ` de ${MESES[d0.getMonth()]}` : '';
+  document.getElementById('week-label').textContent = `Semana del ${d0.getDate()}${mesIni} al ${d6.getDate()} de ${MESES[d6.getMonth()]} ${d6.getFullYear()}`;
+}
+
+function renderBody(ultimo) {
+  const key = getWeekKey(weekOffset);
+  const tbody = document.getElementById('tracker-body');
+  tbody.innerHTML = '';
+
+  if (ultimo < 0) {
+    tbody.innerHTML = '<tr><td colspan="9" class="vacio">Esta semana todavía no tiene días capturados. Usa + Agregar hoy para capturar el día de hoy, o revisa la semana anterior.</td></tr>';
+    return;
+  }
+
+  CLIENTES.forEach(cliente => {
+    const arr = data[key][cliente];
+    const tr = document.createElement('tr');
+
+    const tdName = document.createElement('td');
+    const nombre = document.createElement('div');
+    nombre.className = 'serv-nombre';
+    nombre.textContent = cliente;
+    tdName.appendChild(nombre);
+    tr.appendChild(tdName);
+
+    for (let i = 0; i <= ultimo; i++) {
+      const cell = arr[i];
+      const td = document.createElement('td');
+      if (i === ultimo) td.classList.add('hl');
+
+      const dia = document.createElement('div');
+      dia.className = 'dia';
+      const celda = document.createElement('button');
+      celda.type = 'button';
+      celda.title = 'Cambiar estado';
+      celda.onclick = () => cycleTurno(cliente, i);
+      celda.className = `celda ${cell.turno === -1 ? 'st-p' : 'st-' + cell.turno}`;
+      celda.textContent = cell.turno === -1 ? '' : ESTADOS[cell.turno].e;
+      dia.appendChild(celda);
+
+      if (cell.turno !== -1) {
+        const j = document.createElement('button');
+        j.type = 'button';
+        j.onclick = () => toggleJunta(cliente, i);
+        j.className = `junta ${cell.junta ? 'si' : 'no'}`;
+        j.textContent = cell.junta ? 'Junta' : 'Sin junta';
+        dia.appendChild(j);
+      }
+
+      td.appendChild(dia);
+      tr.appendChild(td);
+    }
+
+    const r = racha(arr, ultimo);
+    const tdR = document.createElement('td');
+    tdR.className = 'racha' + (r === 0 ? ' cero' : '');
+    tdR.textContent = r === 0 ? '–' : `🔥${r}`;
+    tr.appendChild(tdR);
+
+    tbody.appendChild(tr);
+  });
+}
+
+function render() {
+  ensureWeek(getWeekKey(weekOffset));
+  const ultimo = ultimoDiaVisible();
+  renderHeader(ultimo);
+  renderBody(ultimo);
+  document.getElementById('btn-next').disabled = weekOffset >= 0;
+  document.getElementById('btn-hoy').style.display = (weekOffset === 0 && ultimo >= getTodayDayIndex()) ? 'none' : '';
+}
+
+function cycleTurno(cliente, dia) {
+  const cell = data[getWeekKey(weekOffset)][cliente][dia];
+  cell.turno = cell.turno === 3 ? -1 : cell.turno + 1;
+  render();
+  saveData();
+}
+
+function toggleJunta(cliente, dia) {
+  const cell = data[getWeekKey(weekOffset)][cliente][dia];
+  cell.junta = !cell.junta;
+  render();
+  saveData();
+}
+
+async function agregarHoy() {
+  mostrarHoy = true;
+  if (weekOffset !== 0) { weekOffset = 0; await loadData(); }
+  render();
+}
+
+document.getElementById('btn-prev').onclick   = () => changeWeek(-1);
+document.getElementById('btn-next').onclick   = () => changeWeek(1);
+document.getElementById('btn-hoy').onclick    = agregarHoy;
+document.getElementById('btn-reset').onclick  = resetSemana;
+
+// Arranque: si es lunes y aún no hay captura de hoy, abre la semana anterior (para ver el domingo)
+(async () => {
+  await loadData();
+  if (ultimoDiaVisible() < 0) { weekOffset = -1; await loadData(); }
+  render();
+})();
+</script>
+</body>
+</html>
